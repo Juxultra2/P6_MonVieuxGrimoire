@@ -1,5 +1,5 @@
 const Thing = require('../models/Thing');
-const stuffCtrl = require('../controllers/stuff');
+const bookCtrl = require('./book');
 
 exports.createThing = (req, res, next) => {
     const thingObject = JSON.parse(req.body.thing);
