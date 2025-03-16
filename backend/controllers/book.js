@@ -1,44 +1,44 @@
-const Thing = require('../models/Thing');
+const Book = require('../models/books');  
 const bookCtrl = require('./book');
 
-exports.createThing = (req, res, next) => {
-    const thingObject = JSON.parse(req.body.thing);
-    delete thingObject._id;
-    delete thingObject._userId;
-    const thing = new Thing({
-        ...thingObject,
-        userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+exports.createBook = (req, res, next) => {
+    const bookObject = JSON.parse(req.body.book);  // Lecture de l'objet book envoyé
+    delete bookObject._id;  // Suppression de l'ID si présent
+    delete bookObject._userId;  // Suppression de l'ancien userId si présent
+
+    const book = new Book({
+        ...bookObject,  // Inclut les données du book (title, description, imageUrl)
+        userId: req.auth.userId,  // Ajoute l'ID de l'utilisateur authentifié
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`  // Construction de l'URL de l'image
     });
 
-    thing.save()
-    .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
-    .catch(error => { res.status(400).json( { error })})
+    book.save()
+        .then(() => { res.status(201).json({ message: 'Livre enregistré !' }) })  // Si tout va bien
+        .catch(error => { res.status(400).json({ error }) })  // Si une erreur survient
 };
 
-exports.modifyThing =(req, res, next) => {
-    Thing.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
-        .then(() => res.status(200).json({ message: 'Objet modifié !'}))
+exports.modifyBook = (req, res, next) => {
+    Book.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
+        .then(() => res.status(200).json({ message: 'Livre modifié !' }))
         .catch(error => res.status(400).json({ error }));
 };
 
-
-exports.modifyThing = (req, res, next) => {
-    const thingObject = req.file ? {
-        ...JSON.parse(req.body.thing),
+exports.modifyBookWithFile = (req, res, next) => {
+    const bookObject = req.file ? {
+        ...JSON.parse(req.body.book),
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     } : { ...req.body };
 
-    delete thingObject._userId;
-    //  Vérifie si c'est bien le bon utilisateur
-    Thing.findOne({_id: req.params.id})
-        .then((thing) => {
-            if (thing.userId != req.auth.userId) {
-                res.status(401).json({ message : 'Not authorized'});
+    delete bookObject._userId;
+    // Vérifie si c'est bien le bon utilisateur
+    Book.findOne({ _id: req.params.id })
+        .then((book) => {
+            if (book.userId != req.auth.userId) {
+                res.status(401).json({ message: 'Not authorized' });
             } else {
-                Thing.updateOne({ _id: req.params.id}, { ...thingObject, _id: req.params.id})
-                .then(() => res.status(200).json({message : 'Objet modifié!'}))
-                .catch(error => res.status(401).json({ error }));
+                Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
+                    .then(() => res.status(200).json({ message: 'Livre modifié !' }))
+                    .catch(error => res.status(401).json({ error }));
             }
         })
         .catch((error) => {
@@ -46,37 +46,40 @@ exports.modifyThing = (req, res, next) => {
         });
 };
 
-
-exports.deleteThing = (req, res, next) => {
-    //  Vérifie si c'est bien le bon utilisateur
-    Thing.findOne({ _id: req.params.id})
-        .then(thing => {
-            if (thing.userId != req.auth.userId) {
-                res.status(401).json({message: 'Not authorized'});
+exports.deleteBook = (req, res, next) => {
+    // Vérifie si c'est bien le bon utilisateur
+    Book.findOne({ _id: req.params.id })
+        .then(book => {
+            if (book.userId != req.auth.userId) {
+                res.status(401).json({ message: 'Not authorized' });
             } else {
-                const filename = thing.imageUrl.split('/images/')[1];
+                const filename = book.imageUrl.split('/images/')[1];
                 fs.unlink(`images/${filename}`, () => {
-                    Thing.deleteOne({_id: req.params.id})
-                        .then(() => { res.status(200).json({message: 'Objet supprimé !'})})
+                    Book.deleteOne({ _id: req.params.id })
+                        .then(() => { res.status(200).json({ message: 'Livre supprimé !' }) })
                         .catch(error => res.status(401).json({ error }));
                 });
             }
         })
-        .catch( error => {
+        .catch(error => {
             res.status(500).json({ error });
         });
 };
 
-
-exports.getOneThing =(req, res, next) => {
-    Thing.findOne({ _id: req.params.id })
-        .then(thing => res.status(200).json(thing))
+exports.getOneBook = (req, res, next) => {
+    Book.findOne({ _id: req.params.id })
+        .then(book => res.status(200).json(book))
         .catch(error => res.status(404).json({ error }));
 };
 
-exports.getAllThing =(req, res, next) => {
-    Thing.find()
-        .then(things => res.status(200).json(things))
+exports.getBooksList = (req, res, next) => {
+    Book.find()
+        .then(books => res.status(200).json(books))
         .catch(error => res.status(400).json({ error }));
 };
 
+exports.getBestRatedBooks = (req, res, next) => {
+    Book.find().sort({ rating: -1 }).limit(10)  // Trier par note (rating)
+        .then(books => res.status(200).json(books))
+        .catch(error => res.status(400).json({ error }));
+};
