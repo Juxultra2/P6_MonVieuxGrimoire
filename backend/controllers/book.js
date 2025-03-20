@@ -1,13 +1,14 @@
 const Book = require('../models/books');  
-const bookCtrl = require('./book');
+const fs = require('fs');
 
 exports.createBook = (req, res, next) => {
+    console.log(req.body.book);
     const bookObject = JSON.parse(req.body.book);  // Lecture de l'objet book envoyé
     delete bookObject._id;  // Suppression de l'ID si présent
     delete bookObject._userId;  // Suppression de l'ancien userId si présent
-
+    console.log(bookObject); 
     const book = new Book({
-        ...bookObject,  // Inclut les données du book (title, description, imageUrl)
+        ...bookObject,  // Inclut les données du book (title, imageUrl ...)
         userId: req.auth.userId,  // Ajoute l'ID de l'utilisateur authentifié
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`  // Construction de l'URL de l'image
     });
